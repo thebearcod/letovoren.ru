@@ -1,18 +1,77 @@
-RewriteEngine On
+Options -Indexes 
+ErrorDocument 404 /404.php
 
-############################################################################
-#### Удаляем www                                                        ####
-############################################################################
-# Проверяем, содержит ли домен www в начале URL.
-RewriteCond %{HTTP_HOST} ^www\.(.*) [NC]
-# Перенаправляем удаляем www
-RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+<IfModule mod_php.c>
+  php_flag session.use_trans_sid off
+</IfModule>
 
-############################################################################
-#### Перенаправляем протокол http на https                              ####
-############################################################################
+<IfModule mod_php7.c>
+  php_flag session.use_trans_sid off
+</IfModule>
 
-# Проверяем наличие https в URL.
-RewriteCond %{ENV:HTTPS} !on
-# Перенаправляем протокол на https.
-RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+<IfModule mod_rewrite.c>
+  Options +FollowSymLinks
+  RewriteEngine On
+
+  ############################################################################
+  #### Удаляем www                                                        ####
+  ############################################################################
+  # Проверяем, содержит ли домен www в начале URL.
+  RewriteCond %{HTTP_HOST} ^www\.(.*) [NC]
+  # Перенаправляем удаляем www
+  RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+  ############################################################################
+  #### Перенаправляем протокол http на https                              ####
+  ############################################################################
+  # Проверяем наличие https в URL.
+  RewriteCond %{ENV:HTTPS} !on
+  # Перенаправляем протокол на https.
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Убираем повторяющиеся слеши (/) в URL
+  RewriteCond %{THE_REQUEST} //
+  RewriteCond %{QUERY_STRING} !http(s|)://
+  RewriteRule .* /$0 [R=301,L]
+
+  # Убираем index.php, если он есть в конце URL
+  RewriteCond %{REQUEST_URI} ^(.*)/index\.php$
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^(.*)$ %1/ [R=301,L]
+
+  # Убираем home.php, если он есть в конце URL
+  RewriteCond %{REQUEST_URI} ^(.*)/home\.php$
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^(.*)$ %1/ [R=301,L]
+
+  # Убираем index.html, если он есть в конце URL
+  RewriteCond %{REQUEST_URI} ^(.*)/index\.html$
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^(.*)$ %1/ [R=301,L]
+
+  # Убираем home.html, если он есть в конце URL
+  RewriteCond %{REQUEST_URI} ^(.*)/home\.html$
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteRule ^(.*)$ %1/ [R=301,L]
+
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !/bitrix/urlrewrite.php$
+  RewriteRule ^(.*)$ /bitrix/urlrewrite.php [L]
+  RewriteRule .* - [E=REMOTE_USER:%{HTTP:Authorization}]
+</IfModule>
+
+<IfModule mod_dir.c>
+  DirectoryIndex index.php index.html
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive on
+  ExpiresByType image/jpeg "access plus 3 day"
+  ExpiresByType image/gif "access plus 3 day"
+  ExpiresByType image/png "access plus 3 day"
+  ExpiresByType text/css "access plus 3 day"
+  ExpiresByType application/javascript "access plus 3 day"  
+</IfModule>
